@@ -4,7 +4,6 @@ const helmet = require('helmet');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
-const sharp = require('sharp');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
