@@ -1,0 +1,151 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Enum definitions
+enum UserRole { USER ADMIN }
+enum ClothingCategory { TOPS BOTTOMS DRESSES OUTERWEAR SHOES ACCESSORIES }
+enum ClothingPattern { SOLID STRIPED FLORAL CHECKED CAMOUFLAGE }
+enum FitRating { TIGHT LOOSE PERFECT }
+enum Season { SPRING SUMMER AUTUMN WINTER ALL_YEAR }
+enum TryOnStatus { PENDING IN_PROGRESS COMPLETED FAILED }
+enum AnalysisType { FIT TREND PRICE STYLE }
+
+// User model
+model User {
+  id          String    @id @default(uuid())
+  email       String    @unique
+  name        String?
+  image       String?
+  role        UserRole  @default(User)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  measurements Measurement[]
+  tryOnSessions TryOnSession[]
+  wardrobe      WardrobeItem[]
+  cart          CartItem[]
+  wishlist      WishlistItem[]
+}
+
+ // Measurement model
+model Measurement {
+  id          String    @id @default(uuid())
+  userId      String    @db.ForeignKey(User)
+  user        User      @relation(fields: [userId], references: [id])
+  bust        Float     // in cm
+  waist       Float     // in cm
+  hips        Float     // in cm
+  height      Float     // in cm
+  weight      Float     // in kg
+  shoulderWidth Float   // in cm
+  armLength   Float     // in cm
+  inseam      Float     // in cm
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+ // Try-On Session model
+model TryOnSession {
+  id              String    @id @default(uuid())
+  userId          String    @db.ForeignKey(User)
+  user            User      @relation(fields: [userId], references: [id])
+  clothingId      String?   @db.ForeignKey(Clothing)
+  clothing        Clothing? @relation(fields: [clothingId], references: [id])
+  status          TryOnStatus @default(PENDING)
+  avatarState     Json      // Avatar pose, measurements used
+  fitAnalysis     Json?     // Per-region fit analysis
+  sizeRecommendation String?
+  createdAt       DateTime  @default(now())
+  completedAt     DateTime? // nullable
+}
+
+ // Clothing model
+model Clothing {
+  id              String    @id @default(uuid())
+  externalId      String    // External product ID (from API)
+  name            String
+  brand           String?
+  price           Float
+  currency        String    @default("USD")
+  description     String?
+  material        String?
+  careInstructions String?
+  origin          String?
+  imageUrl        String
+  productUrl      String?   // Original product URL
+  category        ClothingCategory
+  pattern         ClothingPattern?
+  colors          String[]  // Primary colors
+  season          Season    @default(ALL_YEAR)
+  gender          String?   // Men/Women/Unisex
+  tags            String[]
+  avgRating       Float     @default(0)
+  reviewCount     Int       @default(0)
+  timesTriedOn    Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+ // Wardrobe Item model
+model WardrobeItem {
+  id              String    @id @default(uuid())
+  userId          String    @db.ForeignKey(User)
+  user            User      @relation(fields: [userId], references: [id])
+  clothingId      String?   @db.ForeignKey(Clothing)
+  clothing        Clothing? @relation(fields: [clothingId], references: [id])
+  imageUrl        String    // User-uploaded photo
+  category        String
+  color           String
+  pattern         String?
+  season          Season
+  size            String
+  cost            Float
+  costPerWear     Float?    // Calculated
+  timesWorn       Int       @default(0)
+  lastWorn        DateTime?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+ // Cart Item model
+model CartItem {
+  id              String    @id @default(uuid())
+  userId          String    @db.ForeignKey(User)
+  user            User      @relation(fields: [userId], references: [id])
+  clothingId      String    @db.ForeignKey(Clothing)
+  clothing        Clothing @relation(fields: [clothingId], references: [id])
+  size            String
+  quantity        Int       @default(1)
+  addedAt         DateTime  @default(now())
+}
+
+ // Wishlist Item model
+model WishlistItem {
+  id              String    @id @default(uuid())
+  userId          String    @db.ForeignKey(User)
+  user            User      @relation(fields: [userId], references: [id])
+  clothingId      String    @db.ForeignKey(Clothing)
+  clothing        Clothing @relation(fields: [clothingId], references: [id])
+  addedAt         DateTime  @default(now())
+}
+
+ // Trend Analysis model
+model TrendAnalysis {
+  id              String    @id @default(uuid())
+  userId          String    @db.ForeignKey(User)
+  user            User      @relation(fields: [userId], references: [id])
+  analysisType    AnalysisType
+  inputData       Json
+  result          Json
+  confidence      Float
+  createdAt       DateTime  @default(now())
+}
